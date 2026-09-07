@@ -104,7 +104,7 @@
             opacity: 0;
         }
 
-        .is-animated .reveal {
+        .reveal.is-inview {
             animation: block1-fade-up 0.7s ease forwards;
         }
 
@@ -491,11 +491,8 @@
             opacity: 1;
         }
 
-        .block3-tasks.is-animated .block3-tasks__line.reveal {
-            animation-name: block3-line-grow;
-            animation-duration: 0.7s;
-            animation-timing-function: ease;
-            animation-fill-mode: forwards;
+        .block3-tasks__line.reveal.is-inview {
+            animation: block3-line-grow 0.7s ease forwards;
         }
 
         .block3-tasks__title_sub {
@@ -831,7 +828,7 @@
 
             .block4-glav-h2 {
                 font-size: 18px;
-                margin: 30px 0 70px;
+                margin: 30px 0 31px;
             }
 
             .block4-glav-cards-grid {
@@ -952,29 +949,16 @@
             background-color: rgba(183, 189, 199, 1);
         }
 
-        .block5-section.is-animated .block5-section__header {
+        .block5-section__header.is-inview {
             animation: block5-fade-from-bottom 0.8s ease-out forwards;
-            animation-delay: 0.15s;
         }
 
-        .block5-section.is-animated .block5-section__image {
+        .block5-section__image.is-inview {
             animation: block5-fade-from-top 0.8s ease-out forwards;
-            animation-delay: 0.37s;
         }
 
-        .block5-section.is-animated .block5-section__card:nth-child(1) {
+        .block5-section__card.is-inview {
             animation: block5-fade-from-bottom 0.8s ease-out forwards;
-            animation-delay: 0.59s;
-        }
-
-        .block5-section.is-animated .block5-section__card:nth-child(2) {
-            animation: block5-fade-from-bottom 0.8s ease-out forwards;
-            animation-delay: 0.81s;
-        }
-
-        .block5-section.is-animated .block5-section__card:nth-child(3) {
-            animation: block5-fade-from-bottom 0.8s ease-out forwards;
-            animation-delay: 1.03s;
         }
 
         @media (max-width: 1024px) {
@@ -1103,7 +1087,7 @@
             opacity: 0;
         }
 
-        .block6-flags.is-animated .block6-flags__reveal {
+        .block6-flags__reveal.is-inview {
             animation: block1-fade-up 0.7s ease forwards;
         }
 
@@ -1537,7 +1521,7 @@
             transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
 
-        .block8-glav-item.animate {
+        .block8-glav-item.is-inview {
             opacity: 1;
             transform: translateY(0);
         }
@@ -1624,7 +1608,7 @@
             transition: opacity 0.8s ease-out, transform 0.8s ease-out;
         }
 
-        .block9-glav__flamp-widget-container.animate {
+        .block9-glav__flamp-widget-container.is-inview {
             opacity: 1;
             transform: translateY(0);
         }
@@ -1658,7 +1642,7 @@
             transition: opacity 0.6s ease-out, transform 0.6s ease-out;
         }
 
-        .block9-glav__card-link.animate {
+        .block9-glav__card-link.is-inview {
             opacity: 1;
             transform: translateX(0);
         }
@@ -2999,150 +2983,83 @@
     </main>
 
 <script>
-        function onEnterView(element, callback) {
-            if (!element) return;
-
-            var done = false;
-            function run() {
-                if (done) return;
-                done = true;
-                callback();
+        (function initScrollReveal() {
+            function isRevealVisible(el) {
+                var node = el;
+                while (node && node !== document.body) {
+                    if (window.getComputedStyle(node).display === 'none') return false;
+                    node = node.parentElement;
+                }
+                return true;
             }
 
-            function isVisible() {
-                var rect = element.getBoundingClientRect();
-                var vh = window.innerHeight || document.documentElement.clientHeight;
-                return rect.bottom > 60 && rect.top < vh - 40;
+            var nodes = Array.prototype.filter.call(
+                document.querySelectorAll([
+                    '.reveal',
+                    '.block6-flags__reveal',
+                    '.block5-section__header',
+                    '.block5-section__image',
+                    '.block5-section__card',
+                    '.block8-glav-item',
+                    '.block9-glav__flamp-widget-container',
+                    '.block9-glav__card-link'
+                ].join(',')),
+                isRevealVisible
+            );
+
+            if (!nodes.length) return;
+
+            var pending = [];
+            var scheduled = false;
+            var stagger = 0.14;
+
+            function flush() {
+                pending.forEach(function (el, index) {
+                    var delay = (index * stagger) + 's';
+                    el.style.animationDelay = delay;
+                    el.style.transitionDelay = delay;
+                    el.classList.add('is-inview');
+                });
+                pending = [];
+                scheduled = false;
             }
 
-            if (isVisible()) {
-                run();
+            function reveal(el) {
+                if (el.classList.contains('is-inview')) return;
+                pending.push(el);
+                if (scheduled) return;
+                scheduled = true;
+                requestAnimationFrame(flush);
+            }
+
+            if (!('IntersectionObserver' in window)) {
+                nodes.forEach(reveal);
                 return;
             }
 
-            if ('IntersectionObserver' in window) {
-                var observer = new IntersectionObserver(function (entries) {
-                    entries.forEach(function (entry) {
-                        if (entry.isIntersecting) {
-                            observer.disconnect();
-                            run();
-                        }
-                    });
-                }, { threshold: 0.05, rootMargin: '0px' });
-                observer.observe(element);
-            }
-
-            window.addEventListener('scroll', function onScroll() {
-                if (isVisible()) {
-                    window.removeEventListener('scroll', onScroll);
-                    run();
-                }
-            }, { passive: true });
-        }
-
-        function isRevealVisible(el) {
-            var node = el;
-            while (node && node !== document.body) {
-                if (window.getComputedStyle(node).display === 'none') return false;
-                node = node.parentElement;
-            }
-            return true;
-        }
-
-        function initSequentialReveal(root) {
-            if (!root) return;
-            var items = Array.prototype.filter.call(root.querySelectorAll('.reveal'), isRevealVisible);
-            if (!items.length) return;
-
-            items.forEach(function (el, index) {
-                el.style.animationDelay = (0.15 + index * 0.22) + 's';
+            var observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) return;
+                    observer.unobserve(entry.target);
+                    reveal(entry.target);
+                });
+            }, {
+                threshold: 0.15,
+                rootMargin: '0px 0px -64px 0px'
             });
 
-            onEnterView(root, function () {
-                root.classList.add('is-animated');
-            });
-        }
-
-        initSequentialReveal(document.querySelector('.block1-glav'));
-        initSequentialReveal(document.querySelector('.block2-glav'));
-        initSequentialReveal(document.querySelector('.block3-tasks'));
-        initSequentialReveal(document.querySelector('.block4-glav'));
-        initSequentialReveal(document.querySelector('.block7-algo'));
-        initSequentialReveal(document.querySelector('.block10-glav'));
-        initSequentialReveal(document.querySelector('.block11-glav'));
-
-        onEnterView(document.querySelector('.block5-section'), function () {
-            document.querySelector('.block5-section').classList.add('is-animated');
-        });
-
-        (function initBlock6Reveal() {
-            var block6 = document.querySelector('.block6-flags');
-            if (!block6) return;
-
-            var reveals = block6.querySelectorAll('.block6-flags__reveal');
-            Array.prototype.forEach.call(reveals, function (el, index) {
-                el.style.animationDelay = (0.15 + index * 0.22) + 's';
-            });
-
-            onEnterView(block6, function () {
-                block6.classList.add('is-animated');
+            nodes.forEach(function (el) {
+                observer.observe(el);
             });
         })();
 
         (function initBlock8Faq() {
             var items = document.querySelectorAll('.block8-glav-item');
-            if (!items.length) return;
-
-            function isVisible(el) {
-                if (el.classList.contains('animate')) return false;
-                var rect = el.getBoundingClientRect();
-                return rect.top < window.innerHeight - 100 && rect.bottom > 0;
-            }
-
-            function animateSequential() {
-                Array.prototype.forEach.call(items, function (item, index) {
-                    if (!isVisible(item)) return;
-                    var prev = index > 0 ? items[index - 1] : null;
-                    if (!prev || prev.classList.contains('animate')) {
-                        item.classList.add('animate');
-                    }
-                });
-            }
-
-            animateSequential();
-
-            var ticking = false;
-            window.addEventListener('scroll', function () {
-                if (ticking) return;
-                ticking = true;
-                requestAnimationFrame(function () {
-                    animateSequential();
-                    ticking = false;
-                });
-            }, { passive: true });
-
             Array.prototype.forEach.call(items, function (item) {
                 var question = item.querySelector('.block8-glav-question');
                 if (!question) return;
                 question.addEventListener('click', function () {
                     item.classList.toggle('active');
-                });
-            });
-        })();
-
-        (function initBlock9Reviews() {
-            var section = document.querySelector('.block9-glav');
-            if (!section) return;
-
-            onEnterView(section, function () {
-                var widget = section.querySelector('.block9-glav__flamp-widget-container');
-                if (widget) widget.classList.add('animate');
-
-                var cards = section.querySelectorAll('.block9-glav__card-link');
-                Array.prototype.forEach.call(cards, function (card, index) {
-                    window.setTimeout(function () {
-                        card.classList.add('animate');
-                    }, index * 200);
                 });
             });
         })();
